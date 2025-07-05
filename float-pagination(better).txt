@@ -1,0 +1,93 @@
+<div class="swiper">
+  <div class="swiper-wrapper">
+    <div class="swiper-slide">1</div>
+    <div class="swiper-slide">2</div>
+    <div class="swiper-slide">3</div>
+    <div class="swiper-slide">4</div>
+  </div>
+  <div class="swiper-pagination"></div>
+</div>
+
+
+.swiper-pagination {
+  --marker-left: 0px;
+  --marker-width: 12px;
+  --marker-radius: 50%;
+  --bullet-size: 12px;
+
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  margin-top: 20px;
+}
+
+.swiper-pagination .swiper-pagination-bullet {
+  width: var(--bullet-size);
+  height: var(--bullet-size);
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#swiper-pagination-marker {
+  position: absolute;
+  top: 0;
+  left: var(--marker-left);
+  width: var(--marker-width);
+  height: var(--bullet-size);
+  background: white;
+  border-radius: var(--marker-radius);
+  transition: left 0.5s ease, width 0.5s ease, border-radius 0.5s ease;
+  z-index: 2;
+}
+
+
+const swiper = new Swiper('.swiper', {
+  loop: true,
+  pagination: {
+    el: '.swiper-pagination',
+    clickable: true,
+    renderBullet: (i, cls) => `<span class="${cls}"></span>`,
+  },
+  on: {
+    init() {
+      const paginationEl = document.querySelector('.swiper-pagination');
+      const marker = document.createElement('span');
+      marker.id = 'swiper-pagination-marker';
+      paginationEl.appendChild(marker);
+
+      const styles = getComputedStyle(paginationEl);
+      const bulletSize = parseFloat(styles.getPropertyValue('--bullet-size'));
+      const markerRadiusCircle = styles.getPropertyValue('--marker-radius-circle') || '50%';
+      const markerRadiusOval = styles.getPropertyValue('--marker-radius-oval') || '6px';
+      let lastLeft = 0;
+
+      this._moveMarker = (idx) => {
+        const bullets = paginationEl.querySelectorAll('.swiper-pagination-bullet');
+        if (!bullets[idx]) return;
+
+        const target = bullets[idx];
+        const currentLeft = target.offsetLeft;
+        const width = target.offsetWidth;
+        const distance = Math.abs(currentLeft - lastLeft);
+
+        marker.style.setProperty('--marker-width', `${distance + width}px`);
+        marker.style.setProperty('--marker-left', `${Math.min(lastLeft, currentLeft)}px`);
+        marker.style.setProperty('--marker-radius', markerRadiusOval);
+
+        setTimeout(() => {
+          marker.style.setProperty('--marker-width', `${width}px`);
+          marker.style.setProperty('--marker-left', `${currentLeft}px`);
+          marker.style.setProperty('--marker-radius', markerRadiusCircle);
+          lastLeft = currentLeft;
+        }, 500);
+      };
+
+      this._moveMarker(this.realIndex);
+    },
+    slideChange() {
+      this._moveMarker(this.realIndex);
+    },
+  },
+});

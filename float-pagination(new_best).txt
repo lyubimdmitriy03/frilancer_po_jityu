@@ -1,0 +1,115 @@
+<!-- HTML -->
+<div class="swiper">
+  <div class="swiper-wrapper">
+    <div class="swiper-slide">Slide 1</div>
+    <div class="swiper-slide">Slide 2</div>
+    <div class="swiper-slide">Slide 3</div>
+    <div class="swiper-slide">Slide 4</div>
+  </div>
+  <div class="swiper-pagination"></div>
+</div>
+
+
+/* CSS (з SCSS-перемінними) */
+.swiper-pagination {
+  --marker-left: 0px;
+  --marker-width: 6px;
+  --marker-radius: 50%;
+  --bullet-size: 6px;
+  --bullet-gap: 0;
+  --marker-radius-circle: 50%;
+  --marker-radius-oval: 6px;
+
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  margin-top: 20px;
+}
+
+.swiper-pagination .swiper-pagination-bullet {
+  width: var(--bullet-size);
+  height: var(--bullet-size);
+  margin: 0 var(--bullet-gap);
+  border-radius: var(--marker-radius-circle);
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: background 0.5s ease;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+}
+
+#swiper-pagination-marker {
+  position: absolute;
+  top: 0;
+  left: var(--marker-left);
+  height: var(--bullet-size);
+  width: var(--marker-width);
+  border-radius: var(--marker-radius);
+  background-color: #fff;
+  z-index: 2;
+  pointer-events: none;
+  transition:
+    left 0.5s ease,
+    width 0.5s ease,
+    border-radius 0.5s ease;
+}
+
+
+
+
+// JS
+const swiper = new Swiper('.swiper', {
+  loop: true,
+  pagination: {
+    el: '.swiper-pagination',
+    clickable: true,
+    renderBullet: (index, className) => `<span class="${className}"></span>`,
+  },
+  on: {
+    init: function () {
+      const swiperInstance = this;
+      const paginationEl = document.querySelector('.swiper-pagination');
+      const marker = document.createElement('span');
+      marker.id = 'swiper-pagination-marker';
+      paginationEl.appendChild(marker);
+
+      const styles = getComputedStyle(paginationEl);
+      const bulletSize = parseFloat(styles.getPropertyValue('--bullet-size'));
+      const markerRadiusCircle = styles.getPropertyValue('--marker-radius-circle').trim();
+      const markerRadiusOval = styles.getPropertyValue('--marker-radius-oval').trim();
+
+      let lastLeft = 0;
+
+      swiperInstance._moveMarker = (index) => {
+        const bullets = paginationEl.querySelectorAll('.swiper-pagination-bullet');
+        const marker = document.getElementById('swiper-pagination-marker');
+        if (!bullets[index] || !marker) return;
+
+        const target = bullets[index];
+        const currentLeft = target.offsetLeft;
+        const bulletWidth = target.offsetWidth;
+
+        const distance = Math.abs(currentLeft - lastLeft);
+
+        marker.style.setProperty('--marker-width', `${distance + bulletWidth}px`);
+        marker.style.setProperty('--marker-left', `${Math.min(lastLeft, currentLeft)}px`);
+        marker.style.setProperty('--marker-radius', markerRadiusOval);
+
+        setTimeout(() => {
+          marker.style.setProperty('--marker-width', `${bulletWidth}px`);
+          marker.style.setProperty('--marker-left', `${currentLeft}px`);
+          marker.style.setProperty('--marker-radius', markerRadiusCircle);
+          lastLeft = currentLeft;
+        }, 500);
+      };
+
+      swiperInstance._moveMarker(swiperInstance.realIndex);
+    },
+    slideChange: function () {
+      if (typeof this._moveMarker === 'function') {
+        this._moveMarker(this.realIndex);
+      }
+    },
+  },
+});
