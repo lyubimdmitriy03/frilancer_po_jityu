@@ -31,7 +31,7 @@
 }
 
 #swiper-pagination-marker {
-	will-change: transform, width, border-radius;
+  will-change: transform, width, border-radius;
   position: absolute;
   top: 0;
   left: var(--marker-left);
