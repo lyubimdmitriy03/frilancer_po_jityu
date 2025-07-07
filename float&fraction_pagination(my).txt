@@ -1,0 +1,250 @@
+📌 Умови роботи:
+У HTML кожного слайдера має бути свій контейнер .swiper-pagination і (опційно) .swiper-pagination-fraction всередині слайдера.
+
+В pagination.el та renderBullet передаєш клас конкретного слайдера (наприклад .products-slider .swiper-pagination).
+🔁 Ця функція тепер повністю ізольована та підтримує множинні слайдери на сторінці. Якщо потрібно, можу показати приклад з 2 слайдерами.
+
+Ось приклад, як використовувати два незалежні Swiper-слайдери на сторінці, кожен з власним:
+
+контейнером,
+
+фракційною пагінацією,
+
+булітами та маркером.
+
+
+ Важливо
+У .swiper-pagination, .swiper-pagination-fraction, .swiper — класи мають бути унікальні для кожного слайдера або обгорнуті у wrapper.
+
+Не використовуй один і той самий клас .swiper-pagination для кількох слайдерів без уточнення селектора (.products-slider-wrapper .swiper-pagination тощо).
+
+
+
+
+
+
+<div class="slider-wrapper products-slider-wrapper">
+	<div class="swiper products-slider">
+		<div class="swiper-wrapper">
+			<div class="swiper-slide">Slide 1</div>
+			<div class="swiper-slide">Slide 2</div>
+			<div class="swiper-slide">Slide 3</div>
+			<div class="swiper-slide">Slide 4</div>
+			<div class="swiper-slide">Slide 5</div>
+		</div>
+		<div class="swiper-pagination"></div>
+		<div class="swiper-pagination-fraction"></div>
+	</div>
+</div>
+
+<div class="slider-wrapper grand-slider-wrapper">
+	<div class="swiper grand-slider">
+		<div class="swiper-wrapper">
+			<div class="swiper-slide">Slide A</div>
+			<div class="swiper-slide">Slide B</div>
+			<div class="swiper-slide">Slide C</div>
+			<div class="swiper-slide">Slide D</div>
+			<div class="swiper-slide">Slide E</div>
+			<div class="swiper-slide">Slide F</div>
+		</div>
+		<div class="swiper-pagination"></div>
+		<div class="swiper-pagination-fraction"></div>
+	</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//css
+.swiper-pagination-marker {
+	position: absolute;
+	height: var(--bullet-size);
+	background: #000;
+	border-radius: var(--marker-radius-circle);
+	transition: all 0.5s ease;
+	left: 0;
+	top: 0;
+	pointer-events: none;
+}
+
+.swiper-pagination-bullet {
+	position: relative;
+	width: var(--bullet-size, 10px);
+	height: var(--bullet-size, 10px);
+	background-color: #ccc;
+	display: inline-block;
+	margin: 0 4px;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ініціалізація
+
+function init_float_pagination() {
+	const swiperInstance = this;
+	const container = swiperInstance.el.closest('.swiper');
+	if (!container) return;
+
+	// ==== ПАГІНАЦІЯ ====
+	const paginationEl = container.querySelector('.swiper-pagination');
+	if (!paginationEl) return;
+
+	// Додаємо маркер, якщо ще не доданий
+	if (!paginationEl.querySelector('.swiper-pagination-marker')) {
+		const marker = document.createElement('span');
+		marker.classList.add('swiper-pagination-marker');
+		paginationEl.appendChild(marker);
+	}
+
+	const styles = getComputedStyle(paginationEl);
+	const bulletSize = parseFloat(styles.getPropertyValue('--bullet-size'));
+	const markerRadiusCircle = styles.getPropertyValue('--marker-radius-circle').trim();
+	const markerRadiusOval = styles.getPropertyValue('--marker-radius-oval').trim();
+
+	let lastLeft = 0;
+
+	swiperInstance._moveMarker = (index) => {
+		const bullets = paginationEl.querySelectorAll('.swiper-pagination-bullet');
+		const marker = paginationEl.querySelector('.swiper-pagination-marker');
+		if (!bullets[index] || !marker) return;
+
+		const target = bullets[index];
+		const currentLeft = target.offsetLeft;
+		const bulletWidth = target.offsetWidth;
+		const distance = Math.abs(currentLeft - lastLeft);
+
+		marker.style.setProperty('--marker-width', `${distance + bulletWidth}px`);
+		marker.style.setProperty('--marker-left', `${Math.min(lastLeft, currentLeft)}px`);
+		marker.style.setProperty('--marker-radius', markerRadiusOval);
+
+		setTimeout(() => {
+			marker.style.setProperty('--marker-width', `${bulletWidth}px`);
+			marker.style.setProperty('--marker-left', `${currentLeft}px`);
+			marker.style.setProperty('--marker-radius', markerRadiusCircle);
+			lastLeft = currentLeft;
+		}, 500);
+	};
+
+	// ==== ФРАКЦІЙНА ПАГІНАЦІЯ ====
+	const fraction = container.querySelector('.swiper-pagination-fraction');
+	let currentEl, totalEl;
+
+	if (fraction) {
+		fraction.innerHTML = `
+			<span class="current">1</span>
+			<span class="divider">/</span>
+			<span class="total">1</span>
+		`;
+		currentEl = fraction.querySelector('.current');
+		totalEl = fraction.querySelector('.total');
+	}
+
+	const updateFraction = () => {
+		if (currentEl && totalEl) {
+			const currentIndex = swiperInstance.realIndex + 1;
+			const totalSlides = swiperInstance.wrapperEl.querySelectorAll('.swiper-slide:not(.swiper-slide-duplicate)').length;
+			currentEl.textContent = currentIndex;
+			totalEl.textContent = totalSlides;
+		}
+	};
+
+	swiperInstance._moveMarker(swiperInstance.realIndex);
+	updateFraction();
+	swiperInstance.on('slideChange', () => {
+		swiperInstance._moveMarker(swiperInstance.realIndex);
+		updateFraction();
+	});
+
+// Стандартна функція генерації булітів
+function renderBullets() {
+	return (index, className) => `<span class="${className}"></span>`;
+}
+
+// Подія зміни слайду
+function slide_change() {
+	if (typeof this._moveMarker === 'function') {
+		this._moveMarker(this.realIndex);
+	}
+}
+
+// Ініціалізація кожного слайдера окремо
+if (document.querySelector('.products-slider')) {
+	new Swiper('.products-slider', {
+		modules: [Navigation, Pagination, Autoplay],
+		loop: true,
+		slidesPerView: 1,
+		spaceBetween: 30,
+		speed: 1500,
+
+		pagination: {
+			el: '.products-slider-wrapper .swiper-pagination',
+			clickable: true,
+			renderBullet: renderBullets(),
+		},
+		on: {
+			init: init_float_pagination,
+			slideChange: slide_change,
+		},
+	});
+}
+
+if (document.querySelector('.grand-slider')) {
+	new Swiper('.grand-slider', {
+		modules: [Navigation, Pagination, Autoplay],
+		loop: true,
+		slidesPerView: 1,
+		spaceBetween: 30,
+		speed: 1500,
+
+		pagination: {
+			el: '.grand-slider-wrapper .swiper-pagination',
+			clickable: true,
+			renderBullet: renderBullets(),
+		},
+		on: {
+			init: init_float_pagination,
+			slideChange: slide_change,
+		},
+	});
+}
+
+
+
+
+
+}
