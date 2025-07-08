@@ -1,0 +1,47 @@
+function cloneContent({
+	buttonSelector,
+	removeSelectors = []
+}) {
+	const buttons = document.querySelectorAll(buttonSelector);
+
+	buttons.forEach(button => {
+		button.addEventListener('click', e => {
+			e.preventDefault();
+
+			// 1️⃣ Отримуємо назву попапа з атрибута data-fls-popup-link
+			const popupName = button.getAttribute('data-fls-popup-link');
+			if (!popupName) return;
+
+			// 2️⃣ Знаходимо сам попап
+			const popup = document.querySelector(`[data-fls-popup="${popupName}"]`);
+			if (!popup) return;
+
+			// 3️⃣ Контейнер для вмісту
+			const popupContent = popup.querySelector('.popup__text');
+			if (!popupContent) return;
+
+			// 4️⃣ Знаходимо батьківський елемент для клонування
+			const parent = button.closest('[data-popup-content-clone]');
+			if (!parent) return;
+
+			const clone = parent.cloneNode(true);
+
+			// 5️⃣ Видаляємо зайві елементи
+			removeSelectors.forEach(selector => {
+				clone.querySelectorAll(selector).forEach(el => el.remove());
+			});
+
+			// 6️⃣ Вставляємо клон у попап
+			popupContent.innerHTML = '';
+			popupContent.appendChild(clone);
+		});
+	});
+}
+
+
+cloneContent({
+	buttonSelector: '.btn-clone-content',
+removeSelectors: ['.no-popup', 'video', 'img.to-remove']
+});
+
+// data-popup-content-clone
